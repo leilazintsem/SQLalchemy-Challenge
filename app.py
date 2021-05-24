@@ -39,3 +39,22 @@ def welcome():
         f"/api/v1.0/start (enter as YYYY-MM-DD)<br/>"
         f"/api/v1.0/start/end (enter as YYYY-MM-DD/YYYY-MM-DD)"
     )
+#Convert query results to a dictionary using `date` as the key and `tobs` as the value    
+@app.route("/api/v1.0/precipitation") 
+def precipitation():
+    # Create session (link) from Python to the DB
+    session = Session(engine)    
+
+    # Query Measurement
+    results = (session.query(Measurement.date, Measurement.tobs)
+                      .order_by(Measurement.date))
+
+    # Create a dictionary from the row data and append to a list date and tobs
+    date_tobs = []
+    for each_row in results:
+        dt_dict = {}
+        dt_dict["date"] = each_row.date
+        dt_dict["tobs"] = each_row.tobs
+        date_tobs.append(dt_dict)
+
+    return jsonify(date_tobs)
