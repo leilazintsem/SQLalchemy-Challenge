@@ -48,6 +48,8 @@ def precipitation():
     # Query Measurement
     results = (session.query(Measurement.date, Measurement.tobs)
                       .order_by(Measurement.date))
+    
+    session.close()
 
     # Create a dictionary from the row data and append to a list date and tobs
     date_tobs = []
@@ -58,3 +60,19 @@ def precipitation():
         date_tobs.append(dt_dict)
 
     return jsonify(date_tobs)
+
+#Return a JSON list of stations from the dataset
+@app.route("/api/v1.0/stations")
+def stations():
+    # Create session (link) from Python to the DB
+    session = Session(engine)
+    # Query Stations
+    results = session.query(Station.name).all()
+
+    session.close()
+
+    # Convert list of tuples into normal list
+    station_normal_list = list(np.ravel(results))
+
+    return jsonify(station_normal_list)
+
