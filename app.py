@@ -76,3 +76,49 @@ def stations():
 
     return jsonify(station_normal_list)
 
+@app.route("/api/v1.0/tobs") # Query the dates and temperature observations of the most active station for the last year of data
+def tobs():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    # Query Measurements for latest date and calculate query_start_date
+    latest_date = (session.query(Measurement.date)
+                          .order_by(Measurement.date
+                          .desc())
+                          .first())
+    
+    latest_date_str = str(latest_date)
+    latest_date_str = re.sub("'|,", "",latest_date_str)
+    latest_date_obj = dt.datetime.strptime(latest_date_str, '(%Y-%m-%d)')
+    query_start_date = dt.date(latest_date_obj.year, latest_date_obj.month, latest_date_obj.day) - dt.timedelta(days=366)
+     
+    # Query station names and their observation counts sorted descending and select most active station
+    station_list = (session.query(Measurement.station, func.count(Measurement.station))
+                             .group_by(Measurement.station)
+                             .order_by(func.count(Measurement.station).desc())
+                             .all())
+    
+    station = station_list[0][0]
+    print(station )
+
+
+    # Return a list of tobs for the year before the final date
+    results = (session.query(Measurement.station, Measurement.date, Measurement.tobs)
+                      .filter(Measurement.date >= query_start_date)
+                      .filter(Measurement.station == station_hno)
+                      .all())
+
+    # Create JSON results
+    tobs_list = []
+    for result in results:
+        line = {}
+        line["Date"] = result[1]
+        line["Station"] = result[0]
+        line["Temperature"] = int(result[2])
+        tobs_list.append(line)
+
+    return jsonify(tobs_list)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
